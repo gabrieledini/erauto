@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1b1240">
+<title>L'Auto — Escape Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#1b1240;
+  --bg2:#241a52;
+  --card:#2e2266;
+  --card2:#382a78;
+  --ink:#140b33;
+  --text:#f1edff;
+  --muted:#b3a8e6;
+  --giallo:#ffd23f;
+  --corallo:#ff5d73;
+  --teal:#2ce5c7;
+  --lilla:#9b8cff;
+  --r:18px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{
+  background:
+    radial-gradient(900px 500px at 80% -10%, #35247e 0%, transparent 60%),
+    radial-gradient(700px 400px at -10% 110%, #14355e 0%, transparent 55%),
+    var(--bg);
+  color:var(--text);
+  font-family:"Nunito",system-ui,sans-serif;
+  font-weight:600;font-size:15px;line-height:1.45;
+}
+#app{max-width:560px;margin:0 auto;padding:12px 12px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+
+/* ---------- header ---------- */
+header{display:flex;align-items:center;gap:10px}
+.logo{
+  font-family:"Baloo 2",cursive;font-weight:800;font-size:30px;line-height:1;
+  color:var(--giallo);
+  text-shadow:0 3px 0 var(--ink), 0 6px 18px rgba(255,210,63,.35);
+}
+.logo span{color:var(--teal)}
+#meta{
+  margin-left:auto;font-size:12px;font-weight:800;color:var(--ink);
+  background:var(--corallo);color:#fff;padding:6px 12px;border-radius:999px;
+  box-shadow:0 3px 0 var(--ink);white-space:nowrap;
+}
+#meta.ok{background:var(--teal);color:var(--ink)}
+
+/* ---------- stage ---------- */
+#stage{
+  position:relative;border-radius:var(--r);overflow:hidden;
+  border:3px solid var(--ink);box-shadow:0 8px 0 var(--ink), 0 20px 40px rgba(0,0,0,.45);
+  background:#232750;
+}
+#stage svg{display:block;width:100%;height:auto}
+#viewname{
+  position:absolute;top:10px;right:10px;z-index:6;
+  font-family:"Baloo 2",cursive;font-weight:800;font-size:15px;
+  color:var(--ink);background:var(--giallo);padding:4px 12px;border-radius:999px;
+  box-shadow:0 3px 0 var(--ink);
+}
+#toast{
+  position:absolute;left:10px;right:10px;bottom:10px;z-index:7;
+  background:#fff;color:var(--ink);font-weight:800;font-size:14px;
+  border-radius:14px;padding:10px 14px;border:3px solid var(--ink);
+  box-shadow:0 5px 0 var(--ink);
+  opacity:0;transform:translateY(14px);transition:opacity .18s, transform .18s;
+  pointer-events:none;
+}
+#toast.on{opacity:1;transform:translateY(0)}
+#toast.gold{background:var(--giallo)}
+#toast.rosso{background:var(--corallo);color:#fff}
+
+/* ---------- hotspot ---------- */
+.hs{fill:rgba(255,210,63,.06);stroke:var(--giallo);stroke-width:3;cursor:pointer;animation:pulse 1.6s ease-in-out infinite}
+.hs:hover,.hs:focus{fill:rgba(255,210,63,.18);outline:none;animation:none}
+@keyframes pulse{0%,100%{stroke-opacity:.9}50%{stroke-opacity:.35}}
+.hlabel{font-family:"Baloo 2",cursive;font-weight:800;font-size:12px;fill:#fff;paint-order:stroke;stroke:var(--ink);stroke-width:3;pointer-events:none}
+
+/* ---------- pad ---------- */
+#pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.btn{
+  font-family:"Baloo 2",cursive;font-weight:800;font-size:16px;color:var(--text);
+  background:var(--card);border:3px solid var(--ink);border-radius:14px;
+  padding:10px 4px;cursor:pointer;box-shadow:0 4px 0 var(--ink);
+  transition:transform .08s, box-shadow .08s, background .12s;
+  min-height:48px;
+}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.btn[aria-pressed="true"]{background:var(--lilla);color:var(--ink)}
+.btn.gold{background:var(--giallo);color:var(--ink)}
+.btn.rosso{background:var(--corallo);color:#fff}
+.btn.teal{background:var(--teal);color:var(--ink)}
+.btn:disabled{opacity:.45}
+
+/* ---------- inventario ---------- */
+#invbox{background:var(--bg2);border:3px solid var(--ink);border-radius:var(--r);padding:10px;box-shadow:0 5px 0 var(--ink)}
+#invbox h2{margin:0 0 8px;font-family:"Baloo 2",cursive;font-size:14px;font-weight:800;color:var(--muted)}
+#inv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.slot{
+  background:var(--card);border:3px dashed #4c3d94;border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  min-height:70px;color:#5a4aa8;font-size:22px;
+}
+.item{
+  background:var(--card2);border:3px solid var(--ink);border-style:solid;cursor:pointer;
+  box-shadow:0 4px 0 var(--ink);transition:transform .1s;color:var(--text);
+}
+.item:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.item.sel{background:var(--giallo);color:var(--ink);animation:pop .25s}
+.item .nome{font-size:10.5px;font-weight:800;text-align:center;line-height:1.1;padding:0 3px}
+.item svg{width:30px;height:30px}
+@keyframes pop{0%{transform:scale(.85)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+
+#tools{display:flex;gap:8px}
+#tools .btn{flex:1;font-size:14px;padding:8px 4px}
+
+/* ---------- overlay ---------- */
+.overlay{
+  position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;
+  padding:18px;background:rgba(15,8,38,.86);backdrop-filter:blur(4px);
+}
+.overlay.on{display:flex}
+.box{
+  position:relative;overflow:hidden;
+  background:var(--bg2);border:3px solid var(--ink);border-radius:22px;
+  box-shadow:0 8px 0 var(--ink), 0 24px 60px rgba(0,0,0,.5);
+  padding:20px;max-width:420px;width:100%;
+}
+.box h3{font-family:"Baloo 2",cursive;font-weight:800;font-size:24px;margin:0 0 8px;color:var(--giallo)}
+.box p{margin:0 0 12px;color:var(--text)}
+.box .emo{font-size:52px;line-height:1;margin:0 0 6px;text-align:center}
+.big{font-family:"Baloo 2",cursive;font-weight:800;font-size:34px;text-align:center;margin:0 0 8px;color:var(--teal)}
+
+/* fili */
+#fili{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.filo{
+  display:flex;align-items:center;gap:10px;
+  background:var(--card);border:3px solid var(--ink);border-radius:12px;
+  padding:8px 12px;cursor:pointer;box-shadow:0 3px 0 var(--ink);
+  font-family:"Baloo 2",cursive;font-weight:800;font-size:15px;color:var(--text);
+}
+.filo:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.filo .zig{flex:1;height:8px;border-radius:4px;border:2px solid var(--ink)}
+.filo .tape{font-size:18px;visibility:hidden}
+.filo.sel{background:var(--card2);outline:3px solid var(--giallo)}
+.filo.sel .tape{visibility:visible}
+
+/* tastierino cassaforte */
+#disp{
+  font-family:"Baloo 2",cursive;font-weight:800;font-size:30px;letter-spacing:.35em;text-align:center;
+  background:#0d1c14;color:#4dffa0;border:3px solid var(--ink);border-radius:12px;
+  padding:8px 4px 8px 14px;margin-bottom:12px;min-height:52px;
+  box-shadow:inset 0 4px 0 rgba(0,0,0,.5);
+}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.keys .btn{font-size:20px;padding:8px 0}
+
+.shake{animation:sh .32s}
+@keyframes sh{25%{transform:translateX(-8px)}50%{transform:translateX(8px)}75%{transform:translateX(-5px)}}
+
+.confetto{position:absolute;top:-20px;width:10px;height:15px;border-radius:3px;animation:fall linear forwards;pointer-events:none}
+@keyframes fall{to{transform:translateY(560px) rotate(720deg);opacity:.9}}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">L'<span>AUTO</span> 🚗</div>
+    <div id="meta">⛓️ LEGATO</div>
+  </header>
+
+  <div id="stage">
+    <span id="viewname">FRONTE</span>
+    <div id="scene"></div>
+    <div id="toast" role="status"></div>
+  </div>
+
+  <div id="pad">
+    <button class="btn" data-go="su">⬆️ SU</button>
+    <button class="btn" data-go="fronte">👀 FRONTE</button>
+    <button class="btn" data-go="giu">⬇️ GIÙ</button>
+    <button class="btn" data-go="sinistra">⬅️ SINISTRA</button>
+    <button class="btn" data-go="retro">🔄 RETRO</button>
+    <button class="btn" data-go="destra">➡️ DESTRA</button>
+  </div>
+
+  <div id="invbox">
+    <h2>🎒 TASCHE — tocca un oggetto, poi tocca dove usarlo</h2>
+    <div id="inv"></div>
+  </div>
+
+  <div id="tools">
+    <button class="btn gold" id="btnHelp">💡 AIUTO</button>
+    <button class="btn" id="btnAudio" aria-pressed="true">🔊 AUDIO</button>
+    <button class="btn rosso" id="btnReset">↩️ RESTART</button>
+  </div>
+</div>
+
+<!-- intro -->
+<div class="overlay on" id="mIntro">
+  <div class="box">
+    <p class="emo">🚗🌙</p>
+    <h3>Ti svegli dentro un'auto…</h3>
+    <p>È notte. Le portiere sono bloccate, la batteria è staccata e — brutta notizia — la <b>cintura di sicurezza è inceppata</b>: riesci a malapena a muoverti.</p>
+    <p>👉 Girati con i tasti direzione e tocca le zone <b style="color:var(--giallo)">gialle</b>. Chi ti ha chiuso qui ha lasciato in giro più di un errore…</p>
+    <button class="btn teal" style="width:100%" id="btnStart">🔓 INIZIA LA FUGA</button>
+  </div>
+</div>
+
+<!-- puzzle fili -->
+<div class="overlay" id="mFili">
+  <div class="box" id="filiBox">
+    <h3>🔌 I cavi della batteria</h3>
+    <p>Con il nastro isolante puoi collegare <b>4 fili</b>. Tocca quelli giusti… ma occhio: il manuale avvertiva di <b>NON toccarne due</b>! ⚠️</p>
+    <div id="fili"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn rosso" style="flex:1" id="btnFiliChiudi">✖️ LASCIA STARE</button>
+      <button class="btn teal" style="flex:1" id="btnFiliOk">⚡ COLLEGA!</button>
+    </div>
+  </div>
+</div>
+
+<!-- cassaforte -->
+<div class="overlay" id="mSafe">
+  <div class="box" id="safeBox">
+    <h3>🔐 La cassaforte</h3>
+    <p>Il tastierino ora è acceso. Quattro cifre… da qualche parte hai visto un numero, anche se scritto in modo strano.</p>
+    <div id="disp">····</div>
+    <div class="keys">
+      <button class="btn">1</button><button class="btn">2</button><button class="btn">3</button>
+      <button class="btn">4</button><button class="btn">5</button><button class="btn">6</button>
+      <button class="btn">7</button><button class="btn">8</button><button class="btn">9</button>
+      <button class="btn rosso" data-k="c">C</button><button class="btn">0</button><button class="btn teal" data-k="ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- finale -->
+<div class="overlay" id="mEnd">
+  <div class="box" id="endBox">
+    <p class="emo">🎉</p>
+    <p class="big">SEI FUORI!</p>
+    <p id="endText" style="text-align:center"></p>
+    <button class="btn teal" style="width:100%" id="btnAgain">🔁 GIOCA ANCORA</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ============ STATO ============ */
+const START = () => ({
+  view:"fronte", inv:[], sel:null,
+  sedile:0, luceAperta:0, libero:0, chiavePresa:0,
+  cruscotto:0, vano:0, corrente:0, targaVista:0,
+  safeAperta:0, over:false, mosse:0
+});
+let S = START();
+let toastTimer=null, audioOn=true, ac=null;
+
+/* icone oggetti */
+const ICO = {
+  cacciavite:`<svg viewBox="0 0 32 32"><rect x="13.5" y="3" width="5" height="13" rx="2" fill="#cdd6ff" stroke="#140b33" stroke-width="2.4"/><path d="M12 16 h8 l-1 4 h-6z" fill="#ffd23f" stroke="#140b33" stroke-width="2.2"/><rect x="12" y="20" width="8" height="9" rx="3" fill="#ff5d73" stroke="#140b33" stroke-width="2.2"/></svg>`,
+  coltello:`<svg viewBox="0 0 32 32"><path d="M8 4 q10 6 12 16 l-5 2 q-6-8-7-18z" fill="#cdd6ff" stroke="#140b33" stroke-width="2.4" stroke-linejoin="round"/><rect x="15" y="21" width="7" height="9" rx="3" transform="rotate(-20 18 25)" fill="#9b8cff" stroke="#140b33" stroke-width="2.2"/></svg>`,
+  chiave:`<svg viewBox="0 0 32 32"><circle cx="11" cy="10" r="6" fill="none" stroke="#ffd23f" stroke-width="4"/><circle cx="11" cy="10" r="6" fill="none" stroke="#140b33" stroke-width="1.6"/><path d="M15 14 L26 25 v4 h-4 l-2-3 -2 1 -3-4" fill="#ffd23f" stroke="#140b33" stroke-width="2.2" stroke-linejoin="round"/></svg>`,
+  nastro:`<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#3a3f6e" stroke="#140b33" stroke-width="2.6"/><circle cx="16" cy="16" r="4.5" fill="#241a52" stroke="#140b33" stroke-width="2.2"/><path d="M27 16 h4" stroke="#3a3f6e" stroke-width="7"/><path d="M27 12.5 h5 v7 h-5" fill="#3a3f6e" stroke="#140b33" stroke-width="2.2"/></svg>`,
+  manuale:`<svg viewBox="0 0 32 32"><rect x="6" y="4" width="20" height="24" rx="3" fill="#2ce5c7" stroke="#140b33" stroke-width="2.6"/><rect x="6" y="4" width="5" height="24" fill="#0fae93" stroke="#140b33" stroke-width="2"/><path d="M15 11 h7 M15 16 h7 M15 21 h5" stroke="#140b33" stroke-width="2.2" stroke-linecap="round"/></svg>`,
+  mazza:`<svg viewBox="0 0 32 32"><rect x="14" y="10" width="4" height="20" rx="2" transform="rotate(30 16 20)" fill="#a86b3c" stroke="#140b33" stroke-width="2.2"/><rect x="8" y="2" width="16" height="10" rx="3" transform="rotate(30 16 7)" fill="#9aa3c7" stroke="#140b33" stroke-width="2.6"/></svg>`
+};
+const ITEMS = {
+  cacciavite:{nome:"Cacciavite"},
+  coltello:{nome:"Coltello"},
+  chiave:{nome:"Chiave"},
+  nastro:{nome:"Nastro isolante"},
+  manuale:{nome:"Manuale"},
+  mazza:{nome:"Mazza"}
+};
+const MANUALE_TXT="📖 Manuale, pagina strappata: «⚠️ NON collegare MAI il filo ROSSO né il filo GIALLO. Gli altri quattro riportano la corrente.»";
+
+/* ============ AUDIO ============ */
+function beep(f=440,d=.08,type="triangle",g=.05){
+  if(!audioOn) return;
+  try{
+    ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(), gn=ac.createGain();
+    o.type=type; o.frequency.value=f;
+    gn.gain.setValueAtTime(g,ac.currentTime);
+    gn.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+d);
+    o.connect(gn).connect(ac.destination); o.start(); o.stop(ac.currentTime+d);
+  }catch(e){}
+}
+function chord(fs,d=.5){ fs.forEach((f,i)=>setTimeout(()=>beep(f,d,"triangle",.06),i*70)); }
+function noise(d=.9,g=.1){
+  if(!audioOn) return;
+  try{
+    ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+    const b=ac.createBuffer(1,ac.sampleRate*d,ac.sampleRate), ch=b.getChannelData(0);
+    for(let i=0;i<ch.length;i++) ch[i]=(Math.random()*2-1)*(1-i/ch.length);
+    const src=ac.createBufferSource(), f=ac.createBiquadFilter(), gn=ac.createGain();
+    src.buffer=b; f.type="lowpass"; f.frequency.value=1100; gn.gain.value=g;
+    src.connect(f).connect(gn).connect(ac.destination); src.start();
+  }catch(e){}
+}
+const vib = p => { try{ navigator.vibrate && navigator.vibrate(p); }catch(e){} };
+
+/* ============ TOAST ============ */
+const toastEl=document.getElementById("toast");
+function say(txt,tipo){
+  toastEl.textContent=txt;
+  toastEl.className="on"+(tipo?" "+tipo:"");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>toastEl.classList.remove("on"), Math.max(2600, txt.length*55));
+}
+
+/* ============ SCENE (SVG cartoon 360x270) ============ */
+function stelle(x,y,w,h,n){
+  let s="";
+  for(let i=0;i<n;i++){
+    const sx=x+((i*97)%w), sy=y+((i*61)%h);
+    s+=`<circle cx="${sx}" cy="${sy}" r="${1+(i%3)*.5}" fill="#ffd23f" opacity="${.5+(i%2)*.4}"/>`;
+  }
+  return s;
+}
+function hs(id,x,y,w,h,label){
+  return `<g><rect class="hs" data-hs="${id}" x="${x}" y="${y}" width="${w}" height="${h}" rx="12" tabindex="0" role="button" aria-label="${label}"/>
+  <text class="hlabel" x="${x+w/2}" y="${y+h+15}" text-anchor="middle">${label}</text></g>`;
+}
+const cavoColori=[["rosso","#ff5d73"],["giallo","#ffd23f"],["verde","#4dd865"],["arancione","#ff9f45"],["nero","#565d8f"],["blu","#3fb9ff"]];
+
+const SCENES = {
+  fronte(){
+    const cavi = S.cruscotto ? `
+      <rect x="148" y="116" width="76" height="52" rx="8" fill="#161a38" stroke="#140b33" stroke-width="3"/>
+      ${cavoColori.map((c,i)=>`<path d="M154 ${124+i*7.5} q10 ${i%2?5:-5} 20 0 t20 0 t20 0" fill="none" stroke="${c[1]}" stroke-width="3.4" stroke-linecap="round"/>`).join("")}
+      ${S.corrente?`<circle cx="216" cy="122" r="3.5" fill="#4dd865" stroke="#140b33" stroke-width="1.6"/>`:""}`
+    : `
+      <rect x="148" y="116" width="76" height="52" rx="8" fill="#454b82" stroke="#140b33" stroke-width="3"/>
+      <circle cx="156" cy="124" r="2.6" fill="#cdd6ff"/><circle cx="216" cy="124" r="2.6" fill="#cdd6ff"/>
+      <circle cx="156" cy="160" r="2.6" fill="#cdd6ff"/><circle cx="216" cy="160" r="2.6" fill="#cdd6ff"/>
+      <rect x="162" y="132" width="48" height="18" rx="4" fill="#232750"/>
+      ${S.corrente?`<text x="186" y="145" text-anchor="middle" class="hlabel" style="fill:#2ce5c7;font-size:10px">ON</text>`:""}`;
+    const vano = S.vano ? `
+      <rect x="238" y="120" width="88" height="48" rx="10" fill="#161a38" stroke="#140b33" stroke-width="3"/>
+      <rect x="238" y="158" width="88" height="12" rx="6" fill="#454b82" stroke="#140b33" stroke-width="3"/>`
+    : `
+      <rect x="238" y="120" width="88" height="48" rx="10" fill="#454b82" stroke="#140b33" stroke-width="3"/>
+      <rect x="272" y="138" width="20" height="10" rx="4" fill="#ffd23f" stroke="#140b33" stroke-width="2.4"/>
+      <circle cx="282" cy="143" r="1.8" fill="#140b33"/>`;
+    return `
+    <rect width="360" height="270" fill="#232750"/>
+    <!-- parabrezza -->
+    <path d="M40 16 L320 16 L336 104 L24 104 Z" fill="#101a3d" stroke="#140b33" stroke-width="5"/>
+    ${stelle(50,24,260,66,14)}
+    <circle cx="288" cy="42" r="13" fill="#f1edff" stroke="#140b33" stroke-width="2.6"/>
+    <circle cx="283" cy="39" r="3" fill="#cdd6ff"/><circle cx="292" cy="46" r="2.2" fill="#cdd6ff"/>
+    <!-- cruscotto -->
+    <path d="M18 104 h324 v22 q-60 14 -162 14 t-162 -14z" fill="#3a3f6e" stroke="#140b33" stroke-width="4"/>
+    <rect x="18" y="104" width="324" height="10" fill="#454b82"/>
+    <!-- volante -->
+    <circle cx="86" cy="158" r="38" fill="none" stroke="#140b33" stroke-width="14"/>
+    <circle cx="86" cy="158" r="38" fill="none" stroke="#454b82" stroke-width="9"/>
+    <circle cx="86" cy="158" r="9" fill="#454b82" stroke="#140b33" stroke-width="3"/>
+    <path d="M86 149 v-22 M79 163 l-19 12 M93 163 l19 12" stroke="#140b33" stroke-width="7"/>
+    <path d="M86 149 v-22 M79 163 l-19 12 M93 163 l19 12" stroke="#454b82" stroke-width="3.4"/>
+    ${cavi}
+    ${vano}
+    <!-- cassaforte -->
+    <g stroke="#140b33" stroke-width="3">
+      <rect x="152" y="186" width="70" height="58" rx="8" fill="#5a628f"/>
+      <rect x="162" y="196" width="28" height="26" rx="4" fill="#232750"/>
+      ${[0,1,2].map(r=>[0,1,2].map(c=>`<circle cx="${168+c*8}" cy="${202+r*8}" r="2.2" fill="${S.corrente?"#2ce5c7":"#3a3f6e"}" stroke="none"/>`).join("")).join("")}
+      <circle cx="206" cy="210" r="8" fill="#454b82"/>
+      <path d="M206 204 v12 M200 210 h12" stroke-width="2.4"/>
+      ${S.corrente&&!S.safeAperta?`<circle cx="212" cy="192" r="3" fill="#4dd865" stroke="none"/>`:""}
+      ${S.safeAperta?`<rect x="152" y="186" width="70" height="58" rx="8" fill="#161a38"/><text x="187" y="220" text-anchor="middle" class="hlabel" style="font-size:11px">vuota</text>`:""}
+    </g>
+    ${hs("parabrezza",28,12,304,96,"PARABREZZA")}
+    ${S.cruscotto?hs("cavi",144,112,84,60,"CAVI"):hs("cruscotto",144,112,84,60,"CRUSCOTTO")}
+    ${hs("vano",234,116,96,56,"VANO PORTAOGGETTI")}
+    ${hs("volante",44,116,84,84,"VOLANTE")}
+    ${hs("cassaforte",148,182,78,66,"CASSAFORTE")}`;
+  },
+  destra(){
+    return `
+    <rect width="360" height="270" fill="#232750"/>
+    <!-- portiera -->
+    <rect x="16" y="14" width="328" height="242" rx="16" fill="#3a3f6e" stroke="#140b33" stroke-width="4"/>
+    <path d="M36 30 L324 30 L310 96 L50 96 Z" fill="#101a3d" stroke="#140b33" stroke-width="4"/>
+    ${stelle(60,38,240,50,10)}
+    <!-- sedile passeggero -->
+    <g stroke="#140b33" stroke-width="3.4" stroke-linejoin="round">
+      <rect x="150" y="66" width="46" height="22" rx="10" fill="#ff5d73"/>
+      <rect x="136" y="88" width="76" height="96" rx="16" fill="#ff5d73"/>
+      <path d="M146 104 h56 M146 124 h56 M146 144 h56" stroke-width="2.6" opacity=".6"/>
+      <rect x="124" y="176" width="100" height="40" rx="14" fill="#ff7d8d"/>
+      ${S.sedile?`<path d="M150 190 l50 12" stroke-width="3" stroke-dasharray="5 4"/>`:""}
+    </g>
+    <rect x="36" y="150" width="60" height="16" rx="8" fill="#454b82" stroke="#140b33" stroke-width="3"/>
+    ${hs("sedile",118,60,112,164,"SEDILE")}
+    ${hs("finestrinoD",44,26,272,74,"FINESTRINO")}`;
+  },
+  sinistra(){
+    const key = S.chiavePresa ? "" : `
+      <g stroke="#140b33" stroke-width="2" transform="rotate(35 258 196)">
+        <circle cx="252" cy="192" r="5" fill="none" stroke="#ffd23f" stroke-width="3.4"/>
+        <path d="M256 195 l12 10 v3 h-3 l-2-2 -2 1 -2-3" fill="#ffd23f" stroke-width="1.8"/>
+      </g>`;
+    return `
+    <rect width="360" height="270" fill="#232750"/>
+    <rect x="16" y="14" width="328" height="242" rx="16" fill="#3a3f6e" stroke="#140b33" stroke-width="4"/>
+    <path d="M36 30 L324 30 L310 96 L50 96 Z" fill="#101a3d" stroke="#140b33" stroke-width="4"/>
+    ${stelle(60,38,240,50,10)}
+    <!-- maniglia -->
+    <rect x="52" y="126" width="72" height="18" rx="9" fill="#454b82" stroke="#140b33" stroke-width="3"/>
+    <rect x="60" y="131" width="34" height="8" rx="4" fill="#232750" stroke="#140b33" stroke-width="2"/>
+    <!-- consolle con portabicchieri -->
+    <g stroke="#140b33" stroke-width="3.4">
+      <rect x="196" y="158" width="128" height="72" rx="16" fill="#454b82"/>
+      <ellipse cx="238" cy="194" rx="22" ry="17" fill="#232750"/>
+      <ellipse cx="292" cy="194" rx="22" ry="17" fill="#232750"/>
+    </g>
+    ${key}
+    ${hs("maniglia",44,118,88,34,"MANIGLIA")}
+    ${hs("portabicchieri",192,152,136,84,"PORTABICCHIERI")}
+    ${hs("finestrinoS",44,26,272,74,"FINESTRINO")}`;
+  },
+  su(){
+    const luce = S.luceAperta ? `
+      <ellipse cx="180" cy="128" rx="42" ry="30" fill="#161a38" stroke="#140b33" stroke-width="4"/>
+      <path d="M158 118 q22 14 44 0" fill="none" stroke="#565d8f" stroke-width="3"/>`
+    : `
+      <ellipse cx="180" cy="128" rx="42" ry="30" fill="#f1edff" stroke="#140b33" stroke-width="4"/>
+      <ellipse cx="180" cy="128" rx="26" ry="17" fill="#cdd6ff" stroke="#140b33" stroke-width="2.6"/>
+      <g fill="#565d8f" stroke="#140b33" stroke-width="1.6">
+        <circle cx="144" cy="128" r="3.6"/><circle cx="216" cy="128" r="3.6"/>
+      </g>
+      <path d="M142 126 l4 4 M146 126 l-4 4 M214 126 l4 4 M218 126 l-4 4" stroke="#140b33" stroke-width="1.4"/>`;
+    return `
+    <rect width="360" height="270" fill="#2b2f55"/>
+    <path d="M20 20 h320 v230 h-320z" fill="#3a3f6e" stroke="#140b33" stroke-width="4" rx="20"/>
+    <path d="M40 40 q140 -14 280 0 M40 230 q140 14 280 0" fill="none" stroke="#454b82" stroke-width="6" stroke-linecap="round"/>
+    ${luce}
+    <!-- specchietto -->
+    <g stroke="#140b33" stroke-width="3">
+      <rect x="132" y="216" width="96" height="30" rx="12" fill="#454b82"/>
+      <rect x="140" y="222" width="80" height="18" rx="8" fill="#101a3d"/>
+    </g>
+    ${hs("luce",130,92,100,72,"LUCE")}
+    ${hs("specchietto",126,210,108,42,"SPECCHIETTO")}`;
+  },
+  giu(){
+    const cintura = S.libero ? `
+      <path d="M52 40 q20 40 14 84" fill="none" stroke="#565d8f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M300 236 q-16 -28 -8 -60" fill="none" stroke="#565d8f" stroke-width="13" stroke-linecap="round"/>`
+    : `
+      <path d="M52 40 Q200 130 300 236" fill="none" stroke="#565d8f" stroke-width="13" stroke-linecap="round"/>
+      <path d="M52 40 Q200 130 300 236" fill="none" stroke="#6b7399" stroke-width="5" stroke-linecap="round"/>
+      <rect x="196" y="150" width="34" height="24" rx="6" fill="#ff5d73" stroke="#140b33" stroke-width="3" transform="rotate(38 213 162)"/>`;
+    return `
+    <rect width="360" height="270" fill="#1f2348"/>
+    <!-- pedali -->
+    <g stroke="#140b33" stroke-width="3">
+      <rect x="52" y="18" width="30" height="44" rx="8" fill="#565d8f" transform="skewX(-6)"/>
+      <rect x="104" y="18" width="30" height="44" rx="8" fill="#565d8f" transform="skewX(-6)"/>
+    </g>
+    <!-- tappeto -->
+    <rect x="44" y="84" width="272" height="156" rx="14" fill="#2e2266" stroke="#140b33" stroke-width="4"/>
+    <rect x="58" y="98" width="244" height="128" rx="10" fill="none" stroke="#4c3d94" stroke-width="3" stroke-dasharray="8 7"/>
+    <!-- targa -->
+    <g transform="rotate(-7 180 182)" stroke="#140b33" stroke-width="3">
+      <rect x="120" y="164" width="120" height="38" rx="6" fill="#f1edff"/>
+      <rect x="124" y="168" width="10" height="30" rx="3" fill="#3fb9ff" stroke-width="2"/>
+      <text x="184" y="191" text-anchor="middle" font-family="Baloo 2" font-weight="800" font-size="21" fill="#140b33" stroke="none">MMCDXV</text>
+    </g>
+    ${cintura}
+    ${hs("cintura",150,110,120,86,"CINTURA")}
+    ${hs("tappeto",112,156,136,56,"TARGA SUL TAPPETO")}
+    ${hs("pedali",40,10,104,62,"PEDALI")}`;
+  },
+  retro(){
+    return `
+    <rect width="360" height="270" fill="#232750"/>
+    <path d="M52 26 L308 26 L322 78 L38 78 Z" fill="#101a3d" stroke="#140b33" stroke-width="4"/>
+    ${stelle(60,32,240,40,9)}
+    <g stroke="#140b33" stroke-width="3.4" stroke-linejoin="round">
+      <rect x="42" y="96" width="120" height="30" rx="12" fill="#ff5d73"/>
+      <rect x="198" y="96" width="120" height="30" rx="12" fill="#ff5d73"/>
+      <rect x="32" y="126" width="296" height="76" rx="18" fill="#ff5d73"/>
+      <path d="M52 146 h256 M52 168 h256" stroke-width="2.6" opacity=".6"/>
+      <rect x="24" y="202" width="312" height="40" rx="14" fill="#ff7d8d"/>
+    </g>
+    ${hs("sedili",26,90,308,120,"SEDILI POSTERIORI")}`;
+  }
+};
+
+/* ============ RENDER ============ */
+const sceneEl=document.getElementById("scene");
+const viewEl=document.getElementById("viewname");
+const invEl=document.getElementById("inv");
+const NOMI={fronte:"👀 FRONTE",destra:"➡️ DESTRA",sinistra:"⬅️ SINISTRA",retro:"🔄 RETRO",su:"⬆️ SU",giu:"⬇️ GIÙ"};
+
+function render(){
+  viewEl.textContent=NOMI[S.view];
+  sceneEl.innerHTML=`<svg viewBox="0 0 360 270" preserveAspectRatio="xMidYMid meet">${SCENES[S.view]()}</svg>`;
+  sceneEl.querySelectorAll("[data-hs]").forEach(el=>{
+    el.addEventListener("click",()=>tap(el.dataset.hs));
+    el.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();tap(el.dataset.hs);} });
+  });
+  document.querySelectorAll("#pad .btn").forEach(b=>b.setAttribute("aria-pressed",b.dataset.go===S.view));
+  renderInv();
+}
+function renderInv(){
+  invEl.innerHTML="";
+  for(let i=0;i<6;i++){
+    const k=S.inv[i];
+    const d=document.createElement("div");
+    if(!k){ d.className="slot"; d.textContent="?"; }
+    else{
+      d.className="slot item"+(S.sel===k?" sel":"");
+      d.innerHTML=ICO[k]+`<span class="nome">${ITEMS[k].nome}</span>`;
+      d.setAttribute("role","button"); d.tabIndex=0;
+      d.onclick=()=>{
+        if(k==="manuale"){ say(MANUALE_TXT,"gold"); beep(500,.07); return; }
+        S.sel=(S.sel===k)?null:k;
+        beep(S.sel?740:370,.06); vib(20);
+        if(S.sel) say("✋ In mano: "+ITEMS[k].nome+". Ora tocca dove usarla!","gold");
+        renderInv();
+      };
+    }
+    invEl.appendChild(d);
+  }
+}
+function take(k,msg){
+  if(S.inv.includes(k)) return;
+  S.inv.push(k); chord([620,830]); vib([30,40,30]);
+  say("✨ "+msg,"gold"); renderInv();
+}
+
+/* ============ INTERAZIONE ============ */
+const BLOCCATI_LEGATO=["parabrezza","cruscotto","cavi","vano","cassaforte","volante"];
+function tap(id){
+  if(S.over) return;
+  S.mosse++;
+  beep(330,.04,"sine",.03);
+  if(!S.libero && BLOCCATI_LEGATO.includes(id)){
+    say("⛓️ La cintura ti tiene inchiodato al sedile: là davanti non ci arrivi!","rosso");
+    S.sel=null; render(); return;
+  }
+  if(S.sel) use(S.sel,id); else look(id);
+  render();
+}
+
+function look(id){
+  switch(id){
+    case "sedile":
+      if(!S.sedile){ S.sedile=1; take("cacciavite","Infilato tra i cuscini del sedile: un CACCIAVITE! Preso."); }
+      else say("Tra i cuscini ormai ci sono solo briciole.");
+      break;
+    case "finestrinoD": case "finestrinoS":
+      say("Vetro spesso e bloccato. A pugni non lo scalfisci nemmeno.");
+      break;
+    case "luce":
+      say(S.luceAperta ? "La plafoniera è aperta e vuota."
+                       : "La plafoniera del tettuccio… è fissata con due VITI. 🤔");
+      break;
+    case "specchietto":
+      say("Nello specchietto vedi solo la tua faccia preoccupata. 😬");
+      break;
+    case "cintura":
+      say(S.libero ? "La cintura tagliata penzola dai lati. Che liberazione!"
+                   : "La cintura è inceppata: il pulsante rosso non si sblocca. Serve qualcosa di TAGLIENTE.");
+      break;
+    case "tappeto":
+      S.targaVista=1;
+      say("🔢 Sotto il tappeto c'è una vecchia TARGA: MMCDXV. Numeri romani… che numero sarà?","gold");
+      break;
+    case "pedali":
+      say("Freno e frizione. Senza chiavi di accensione servono a poco.");
+      break;
+    case "maniglia":
+      say("La tiri: CLACK. Bloccata dalla sicura. 🚫");
+      break;
+    case "portabicchieri":
+      if(!S.chiavePresa){ S.chiavePresa=1; take("chiave","Nel portabicchieri qualcuno ha dimenticato una CHIAVE! Che errore… Presa!"); }
+      else say("Nel portabicchieri restano solo due monetine appiccicose.");
+      break;
+    case "sedili":
+      say("I sedili posteriori sono vuoti. Nemmeno una briciola di indizio.");
+      break;
+    case "volante":
+      if(S.corrente){ beep(196,.35,"square",.09); vib(60); say("📣 TUUUU! Il clacson funziona di nuovo. Divertente, ma non ti fa uscire."); }
+      else say("Giri il volante a vuoto. Senza corrente l'auto è un sasso.");
+      break;
+    case "parabrezza":
+      say("Il vetro è enorme… fuori c'è la LIBERTÀ. Servirebbe qualcosa di molto pesante. 🏏");
+      break;
+    case "cruscotto":
+      say("Un pannello del cruscotto con quattro VITI agli angoli. Chissà cosa nasconde.");
+      break;
+    case "cavi":
+      say("Un groviglio di 6 fili colorati: rosso, giallo, verde, arancione, nero e blu. Sono staccati dalla batteria.");
+      break;
+    case "vano":
+      say(S.vano ? "Il vano è aperto e ormai vuoto."
+                 : "Il vano portaoggetti è chiuso a chiave. La serratura è piccola e dorata…");
+      break;
+    case "cassaforte":
+      if(S.safeAperta) say("La cassaforte è aperta e vuota.");
+      else if(!S.corrente) say("Una cassaforte sotto il cruscotto! Ma il tastierino è SPENTO: niente corrente, niente codice.");
+      else openSafe();
+      break;
+  }
+}
+
+function use(item,id){
+  const K=(a,b)=>item===a&&id===b;
+
+  if(K("cacciavite","luce")){
+    if(S.luceAperta){ say("La plafoniera è già aperta."); return; }
+    S.luceAperta=1; S.sel=null; noise(.4,.06);
+    take("coltello","Sviti la plafoniera e dentro… un COLTELLO nascosto! Preso.");
+    return;
+  }
+  if(K("coltello","cintura")){
+    if(S.libero){ say("La cintura è già tagliata."); return; }
+    S.libero=1; S.sel=null; noise(.5,.07); vib([40,30,40]);
+    say("✂️ ZAC! La cintura si taglia di netto: ora puoi muoverti in tutta la parte davanti dell'auto!","gold");
+    document.getElementById("meta").textContent="🙌 LIBERO";
+    document.getElementById("meta").classList.add("ok");
+    return;
+  }
+  if(K("cacciavite","cruscotto")){
+    S.cruscotto=1; S.sel=null; noise(.5,.07);
+    say("🔩 Sviti il pannello del cruscotto: sotto c'è un GROVIGLIO DI CAVI colorati staccati dalla batteria!","gold");
+    return;
+  }
+  if(K("chiave","vano")){
+    if(S.vano){ say("Il vano è già aperto."); return; }
+    S.vano=1; S.sel=null; chord([620,830]); vib([30,40,30]);
+    S.inv=S.inv.filter(x=>x!=="chiave");
+    take("nastro","Il vano si apre! Dentro: NASTRO ISOLANTE…");
+    setTimeout(()=>{ take("manuale","…e un MANUALE con una pagina segnata! Toccalo nello zaino per leggerlo."); render(); },900);
+    return;
+  }
+  if(K("nastro","cavi")){
+    if(S.corrente){ say("I fili sono già collegati, la corrente c'è."); return; }
+    openFili(); return;
+  }
+  if(K("nastro","cruscotto")){ say("Prima devi APRIRE il cruscotto: quelle viti non si tolgono col nastro."); return; }
+  if(K("mazza","parabrezza")){ win(); return; }
+  if(K("mazza","cassaforte")||K("mazza","vano")){ say("BONK! Nemmeno un graffio. La mazza serve per qualcosa di più… vetroso. 😏"); return; }
+  if(K("coltello","parabrezza")||K("cacciavite","parabrezza")){ say("Graffi appena il vetro. Serve qualcosa di MOLTO più pesante."); return; }
+  if(K("coltello","vano")||K("cacciavite","vano")){ say("Forzi la serratura ma è troppo robusta. Ci vorrebbe la sua chiave…"); return; }
+  if(K("chiave","cassaforte")){ say("La cassaforte non ha serratura: solo un tastierino a codice."); return; }
+  say("Mmm… qui non serve a niente.");
+  S.sel=null;
+}
+
+/* ============ PUZZLE FILI ============ */
+const GIUSTI=["verde","arancione","nero","blu"];
+let filiSel=[];
+const mFili=document.getElementById("mFili");
+function drawFili(){
+  const box=document.getElementById("fili");
+  box.innerHTML="";
+  cavoColori.forEach(([nome,col])=>{
+    const d=document.createElement("div");
+    d.className="filo"+(filiSel.includes(nome)?" sel":"");
+    d.setAttribute("role","button"); d.tabIndex=0;
+    d.innerHTML=`<span class="zig" style="background:${col}"></span><span>${nome.toUpperCase()}</span><span class="tape">🩹</span>`;
+    d.onclick=()=>{
+      filiSel = filiSel.includes(nome) ? filiSel.filter(f=>f!==nome) : [...filiSel,nome];
+      beep(filiSel.includes(nome)?600:340,.05); vib(15);
+      drawFili();
+    };
+    box.appendChild(d);
+  });
+}
+function openFili(){ filiSel=[]; drawFili(); mFili.classList.add("on"); }
+document.getElementById("btnFiliChiudi").onclick=()=>mFili.classList.remove("on");
+document.getElementById("btnFiliOk").onclick=()=>{
+  const ok = filiSel.length===4 && GIUSTI.every(f=>filiSel.includes(f));
+  if(ok){
+    mFili.classList.remove("on");
+    S.corrente=1; S.sel=null;
+    chord([392,523,659,784],.5); vib([50,50,120]);
+    say("⚡ VVVMMM! Le luci del cruscotto si accendono: LA CORRENTE È TORNATA! Anche il tastierino della cassaforte ora è acceso…","gold");
+    document.getElementById("meta").textContent="⚡ CORRENTE ON";
+    document.getElementById("meta").classList.add("ok");
+    render();
+  }else{
+    document.getElementById("filiBox").classList.add("shake");
+    beep(110,.3,"sawtooth",.08); vib(150);
+    const tocc=filiSel.some(f=>f==="rosso"||f==="giallo");
+    say(tocc ? "⚡ ZAP! Una scossa ti fa ritirare la mano! Il manuale ti aveva avvertito…"
+             : "Scintille e niente corrente. Servono ESATTAMENTE i 4 fili giusti!","rosso");
+    setTimeout(()=>document.getElementById("filiBox").classList.remove("shake"),340);
+    filiSel=[]; drawFili();
+  }
+};
+
+/* ============ CASSAFORTE ============ */
+const CODICE="2415";
+let pin="";
+const mSafe=document.getElementById("mSafe");
+const disp=document.getElementById("disp");
+function drawPin(){ disp.textContent=pin.padEnd(4,"·"); }
+function openSafe(){ pin=""; drawPin(); mSafe.classList.add("on"); }
+document.querySelectorAll("#mSafe .keys .btn").forEach(b=>{
+  b.onclick=()=>{
+    const k=b.dataset.k||b.textContent;
+    beep(480,.05); vib(15);
+    if(k==="c"){ pin=""; drawPin(); return; }
+    if(k==="ok"){
+      if(pin===CODICE){
+        mSafe.classList.remove("on");
+        S.safeAperta=1;
+        chord([620,830,1046],.5); vib([40,40,80]);
+        take("mazza","CLICK! La cassaforte si spalanca: dentro c'è una MAZZA! Presa.");
+        render();
+      }else{
+        document.getElementById("safeBox").classList.add("shake");
+        beep(130,.25,"sawtooth",.06); vib(120);
+        setTimeout(()=>document.getElementById("safeBox").classList.remove("shake"),340);
+        pin=""; drawPin();
+        say("❌ BEEP! Codice sbagliato. Quei numeri romani sulla targa…","rosso");
+      }
+      return;
+    }
+    if(pin.length<4){ pin+=k; drawPin(); }
+  };
+});
+
+/* ============ FINALE ============ */
+function confetti(){
+  const box=document.getElementById("endBox");
+  const cols=["#ffd23f","#ff5d73","#2ce5c7","#9b8cff","#3fb9ff"];
+  for(let i=0;i<70;i++){
+    const c=document.createElement("i");
+    c.className="confetto";
+    c.style.left=Math.random()*100+"%";
+    c.style.background=cols[i%cols.length];
+    c.style.animationDuration=(1.4+Math.random()*1.6)+"s";
+    c.style.animationDelay=(Math.random()*0.8)+"s";
+    box.appendChild(c);
+    setTimeout(()=>c.remove(),4000);
+  }
+}
+function win(){
+  S.over=true;
+  noise(.8,.14); chord([523,659,784,1046],.6); vib([80,60,80,60,160]);
+  document.getElementById("endText").textContent=
+    "CRASH! 💥 Il parabrezza va in mille pezzi e l'aria fresca della notte ti riempie i polmoni. "+
+    "Fuga completata in "+S.mosse+" mosse. Prova a scappare dalla prossima stanza da solo! 🏆";
+  document.getElementById("mEnd").classList.add("on");
+  confetti();
+}
+
+/* ============ AIUTO ============ */
+function hint(){
+  let h;
+  if(!S.sedile) h="💡 Guarda a DESTRA e fruga bene tra i cuscini del sedile…";
+  else if(!S.luceAperta) h="💡 Guarda SU: quella plafoniera ha due viti. Hai qualcosa per svitarle?";
+  else if(!S.libero) h="💡 Guarda GIÙ: la cintura non si sblocca, ma ora hai qualcosa che TAGLIA…";
+  else if(!S.chiavePresa) h="💡 Ora puoi girarti! Guarda a SINISTRA e controlla il portabicchieri.";
+  else if(!S.cruscotto) h="💡 Di FRONTE: quel pannello del cruscotto ha delle viti. Cacciavite!";
+  else if(!S.vano) h="💡 Sempre di FRONTE: quella chiavetta dorata apre il VANO PORTAOGGETTI.";
+  else if(!S.corrente) h="💡 Leggi il MANUALE nello zaino, poi usa il NASTRO sui CAVI: collega solo i 4 fili sicuri!";
+  else if(!S.targaVista&&!S.safeAperta) h="💡 Guarda GIÙ e solleva il tappeto: c'è qualcosa di scritto…";
+  else if(!S.safeAperta) h="💡 MMCDXV è in numeri romani: M=1000, CD=400, X=10, V=5. Componi il numero sulla CASSAFORTE!";
+  else h="💡 Hai la MAZZA: usala sul PARABREZZA e… buona libertà! 💥";
+  say(h,"gold");
+}
+
+/* ============ CONTROLLI ============ */
+document.querySelectorAll("#pad .btn").forEach(b=>{
+  b.onclick=()=>{
+    if(S.over) return;
+    const dest=b.dataset.go;
+    if(!S.libero && (dest==="sinistra"||dest==="retro")){
+      say("⛓️ Provi a girarti ma la cintura ti strattona indietro. Prima devi LIBERARTI!","rosso");
+      beep(160,.15,"sawtooth",.05); return;
+    }
+    S.view=dest; beep(260,.04,"sine",.03); render();
+  };
+});
+document.getElementById("btnHelp").onclick=hint;
+document.getElementById("btnAudio").onclick=e=>{
+  audioOn=!audioOn;
+  e.currentTarget.textContent=audioOn?"🔊 AUDIO":"🔇 MUTO";
+  e.currentTarget.setAttribute("aria-pressed",audioOn);
+};
+document.getElementById("btnReset").onclick=reset;
+document.getElementById("btnAgain").onclick=()=>{ document.getElementById("mEnd").classList.remove("on"); reset(); };
+document.getElementById("btnStart").onclick=()=>{
+  document.getElementById("mIntro").classList.remove("on");
+  beep(560,.12); vib(30);
+  say("⛓️ Sei legato al sedile: riesci a guardare solo davanti, a destra, su e giù. Comincia a frugare!");
+};
+function reset(){
+  S=START(); filiSel=[]; pin="";
+  const meta=document.getElementById("meta");
+  meta.textContent="⛓️ LEGATO"; meta.classList.remove("ok");
+  say("Ti risvegli. Di nuovo legato, di nuovo nell'auto…");
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
